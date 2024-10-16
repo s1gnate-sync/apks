@@ -1,0 +1,62 @@
+---
+package:
+  name: "spatial-shell"
+  version: "7"
+  epoch: 0
+  description: "layout generator inspired by material shell, for i3 and sway"
+  copyright:
+      - license: MPL-2.0
+  dependencies:
+    runtime:
+      - bubblewrap
+      - go-task
+
+environment:
+  contents:
+    repositories:
+      - https://dl-cdn.alpinelinux.org/alpine/edge/main
+      - https://dl-cdn.alpinelinux.org/alpine/edge/community
+    packages:
+      - alpine-baselayout-data
+      - busybox
+      - ca-certificates-bundle
+      - build-base
+      - bash
+      - ocaml
+      - ocaml-compiler-libs
+      - dune
+      - scdoc
+      - musl-utils
+      - opam
+      - rsync
+
+pipeline:
+  - uses: fetch
+    with:
+      uri: https://github.com/lthms/spatial-shell/releases/download/${{package.version}}/spatial-shell-${{package.version}}.tbz
+      expected-sha256: c811e46f5de69753ebb1a7f04750cdb501971408bd2fac4feae5e003dab0d330
+
+  - runs: |
+      set -exu
+      opam init
+
+      eval $(opam env --switch=default) 
+      make build-deps
+      
+      eval $(opam env)
+      make all > /dev/null
+
+
+      mkdir -p dest
+      DESTDIR=dest make install
+      
+      rm -fr dest/var/lib/db/sbom
+
+      DESTDIR=${{targets.destdir}}/usr/local
+      mkdir -p $DESTDIR
+      mv dest/* $DESTDIR
+      
+      find $DESTDIR
+
+
+
