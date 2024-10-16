@@ -17,5 +17,19 @@ case "$(uname -m)" in
   ;;  
 esac
 
+if [ -z "${1:-}" ]; then
+  :
+  # rm -fr out
+  # for file in $(find .  -maxdepth 1 -iname '*.yaml'); do
+  #   $(CONFIG="${file##*/}" $PWD/bin/yaegi.$arch run $PWD/bin/build.go)
+  # done
+else
+  $(CONFIG="$1" $PWD/bin/yaegi.$arch run $PWD/bin/build.go)
+fi
 
-$(CONFIG="$1" $PWD/bin/yaegi.$arch run $PWD/bin/build.go)
+for dir in out/apk/*; do
+  _dir=$PWD
+  cd $dir
+  find . -type f -iname '*.apk' | xargs -r $_dir/bin/melange.$arch index 
+  cd $_dir
+done

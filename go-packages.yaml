@@ -1,0 +1,34 @@
+package:
+  name: go-packages
+  version: 1
+  epoch: 0
+  description: "go packages"
+  dependencies:
+    runtime:
+      - gomplate
+      - go-task
+      - go-task-task
+      - yaegi
+      - gomplate
+
+environment:
+  contents:
+    repositories:
+      - https://dl-cdn.alpinelinux.org/alpine/edge/main
+      - https://dl-cdn.alpinelinux.org/alpine/edge/community
+    packages:
+      - alpine-base
+      - go
+      - build-base
+
+pipeline:
+  - runs: |
+      export GOBIN=${{targets.destdir}}/usr/local/bin
+      mkdir -p $GOBIN
+
+      go install github.com/benhoyt/goawk@latest
+      go install mvdan.cc/gofumpt@latest
+      go install golang.org/x/tools/cmd/goimports@latest
+      go install github.com/quasilyte/gogrep/cmd/gogrep@latest
+      go install github.com/go-toolsmith/minformat/cmd@latest
+      go install github.com/sqs/goreturns@latest

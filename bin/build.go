@@ -26,17 +26,14 @@ func main() {
 		prefix = "."
 	}
 
-	config := os.Getenv("CONFIG")
+	config := strings.TrimSuffix(os.Getenv("CONFIG"), ".yaml")
 	if config == "" {
 		os.Exit(1)
 	}
 
 	srcArg := "--empty-workspace"
-	if _, err := os.Stat(filepath.Join(prefix, config, "melange.yaml")); err == nil {
-		config = filepath.Join(prefix, config, "melange.yaml")
-		if _, err := os.Stat(filepath.Join(prefix, config, "src")); err == nil {
-			srcArg = "--src-dir " + filepath.Join(prefix, config, "src")
-		}
+	if _, err := os.Stat(filepath.Join(prefix, config)); err == nil {
+			srcArg = "--src-dir " + filepath.Join(prefix, config)
 	} else {
 		config = filepath.Join(prefix, config+".yaml")
 	}
@@ -70,8 +67,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "(buildroot) %s: %s\n", apkoCacheDir, err)
 	}
 
-
-	 fmt.Println(strings.Join([]string{
+	fmt.Println(strings.Join([]string{
 		"bwrap",
 		"--clearenv",
 		"--setenv", "PATH", Path,
@@ -82,12 +78,12 @@ func main() {
 		"--bind", tempDir, "/tmp",
 		"--dev", "/dev",
 		"--proc", "/proc",
-		filepath.Join(prefix, "bin", "melange." + runtime.GOARCH),
+		filepath.Join(prefix, "bin", "melange."+runtime.GOARCH),
 		"build",
 		srcArg,
 		"--log-level", "info",
 		"--runner", "bubblewrap",
-		"--out-dir", outDir,
+		"--out-dir", filepath.Join(outDir, "apk"),
 		"--cache-dir", melangeCacheDir,
 		"--arch", runtime.GOARCH,
 		"--apk-cache-dir", apkoCacheDir,

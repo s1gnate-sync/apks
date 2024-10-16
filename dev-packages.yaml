@@ -1,0 +1,36 @@
+---
+package:
+  name: "dev-packages"
+  version: "1"
+  epoch: 0
+  description: "various packages for development"
+  copyright:
+    - license: "MIT"
+  target-architecture:
+    - all
+  dependencies:
+    runtime:
+      - build-base
+      - meson
+      - ninja
+      - automake
+      - autoconf
+      - cmake
+      - make
+      - go
+      - shfmt
+      - rustup
+      - clang
+      - musl-dev
+      
+environment:
+  contents:
+    repositories:
+      - https://dl-cdn.alpinelinux.org/alpine/edge/main
+      - https://dl-cdn.alpinelinux.org/alpine/edge/community
+    packages:
+      - busybox
+
+pipeline:
+  - runs: |
+      mkdir -p "${{targets.destdir}}"

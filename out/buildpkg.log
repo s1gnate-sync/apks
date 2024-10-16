@@ -1,5 +1,0 @@
-2024/10/16 15:35:14 ERRO failed to load configuration: open false: no such file or directory
-bwrap: execvp /home/user/projects/apks/bin/melange.arm64 --arch arm64 --empty-workspace build: No such file or directory
-bwrap: execvp /home/user/projects/apks/bin/melange.arm64 --arch arm64 --empty-workspace build: No such file or directory
-bwrap: execvp /home/user/projects/apks/bin/melange.arm64 --arch arm64 --empty-workspace build: No such file or directory
-bwrap: execvp /home/user/projects/apks/bin/melange.arm64 build build: No such file or directory

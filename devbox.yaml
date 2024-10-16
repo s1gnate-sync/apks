@@ -1,0 +1,29 @@
+---
+package:
+  name: "devbox"
+  version: "1"
+  epoch: 0
+  description: "devbox nix"
+  copyright:
+    - license: "MIT"
+  dependencies:
+    runtime:
+      - nix
+      
+environment:
+  contents:
+    repositories:
+      - https://dl-cdn.alpinelinux.org/alpine/edge/main
+      - https://dl-cdn.alpinelinux.org/alpine/edge/community
+    packages:
+      - alpine-base
+      - curl
+      - bash
+      - sed
+
+pipeline:
+  - runs: |
+      mkdir -p "${{targets.destdir}}/usr/local/bin"
+      curl -fsSL https://get.jetify.com/devbox | sed -E 's#^(readonly INSTALL_DIR=")(.+".*)$#\1${{targets.destdir}}\2#g' | env FORCE=1 bash
+      
+      
