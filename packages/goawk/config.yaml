@@ -1,0 +1,22 @@
+package:
+  name: goawk
+  version: latest
+  epoch: 0
+  description: "goawk"
+
+environment:
+  contents:
+    repositories:
+      - https://dl-cdn.alpinelinux.org/alpine/edge/main
+      - https://dl-cdn.alpinelinux.org/alpine/edge/community
+    packages:
+      - alpine-base
+      - go
+      - build-base
+
+pipeline:
+  - runs: |
+      export GOBIN=${{targets.destdir}}/usr/bin
+      mkdir -p $GOBIN
+
+      go install github.com/benhoyt/goawk@latest

@@ -1,0 +1,21 @@
+package:
+  name: melange
+  version: v0.13.6
+  epoch: 0
+  description: "build APKs from source code"
+
+
+environment:
+  contents:
+    repositories:
+      - https://dl-cdn.alpinelinux.org/alpine/edge/main
+      - https://dl-cdn.alpinelinux.org/alpine/edge/community
+    packages:
+      - alpine-base
+      - build-base
+
+pipeline:
+  - uses: go/install
+    with:
+      package: chainguard.dev/melange
+      version: ${{package.version}}

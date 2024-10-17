@@ -2,93 +2,135 @@ package main
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
 )
 
 var (
-	Path = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-	Term = "xterm"
-	Lang = "C"
-	Home = "/home/build"
+	path                 = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+	term                 = "xterm"
+	lang                 = "C"
+	tempDir              = ""
+	progName             = "(build)"
+	packageDir           = ""
+	configPath           = ""
+	command    *exec.Cmd = nil
 )
 
-func main() {
-	exe, _ := os.Executable()
-	if exe != "" {
-		os.Chdir(filepath.Join(filepath.Dir(exe), ".."))
-	}
+func printErr(params ...string) {
+	fmt.Fprintf(os.Stderr, "%s: %s\n", progName, strings.Join(params, " "))
+}
 
-	prefix, _ := filepath.Abs(".")
-	if prefix == "" {
-		prefix = "."
-	}
+func setupTempDir() {
+	tempDir, _ = os.MkdirTemp(packageDir, "temp*")
 
-	config := strings.TrimSuffix(os.Getenv("CONFIG"), ".yaml")
-	if config == "" {
+	if tempDir == "" {
+		printErr("can't create temporary dir", "packageDir="+packageDir)
+		os.Exit(1)
+	}
+}
+
+func setupPackage() {
+	path := os.Getenv("packagedir")
+	if path == "" {
+		printErr("env variable packagedir is undefined")
 		os.Exit(1)
 	}
 
-	srcArg := "--empty-workspace"
-	if _, err := os.Stat(filepath.Join(prefix, config)); err == nil {
-			srcArg = "--src-dir " + filepath.Join(prefix, config)
-	} else {
-		config = filepath.Join(prefix, config+".yaml")
+	if _, err := os.Stat(path); err != nil {
+		printErr("invalid value: ", err.Error(), "packagedir="+path)
+		os.Exit(1)
 	}
 
-	outDir := filepath.Join(prefix, "out")
-	if err := os.MkdirAll(outDir, 0o755); err != nil {
-		fmt.Fprintf(os.Stderr, "(buildroot) %s: %s\n", outDir, err)
+	config := filepath.Join(path, "config.yaml")
+	if _, err := os.Stat(config); err != nil {
+		printErr("no config: ", err.Error(), "config="+config)
+		os.Exit(1)
 	}
 
-	tempRoot := filepath.Join(outDir, "tmp")
-	if err := os.MkdirAll(tempRoot, 0o755); err != nil {
-		fmt.Fprintf(os.Stderr, "(buildroot) %s: %s\n", tempRoot, err)
-	}
+	configPath = config
+	packageDir = path
+}
 
-	tempDir, err := os.MkdirTemp(tempRoot, "*")
-	if err != nil {
-		tempDir = tempRoot
-	}
-
-	if err = os.MkdirAll(tempDir, 0o755); err != nil {
-		fmt.Fprintf(os.Stderr, "(buildroot) %s: %s\n", tempDir, err)
-	}
-
-	melangeCacheDir := filepath.Join(outDir, "cache", "melange")
-	if err = os.MkdirAll(melangeCacheDir, 0o755); err != nil {
-		fmt.Fprintf(os.Stderr, "(buildroot) %s: %s\n", melangeCacheDir, err)
-	}
-
-	apkoCacheDir := filepath.Join(outDir, "cache", "apko")
-	if err = os.MkdirAll(apkoCacheDir, 0o755); err != nil {
-		fmt.Fprintf(os.Stderr, "(buildroot) %s: %s\n", apkoCacheDir, err)
-	}
-
-	fmt.Println(strings.Join([]string{
+func setupCommand() {
+	command = exec.Command(
 		"bwrap",
 		"--clearenv",
-		"--setenv", "PATH", Path,
-		"--setenv", "TERM", Term,
-		"--setenv", "HOME", Home,
-		"--setenv", "LC_ALL", Lang,
+		"--setenv", "PATH", path,
+		"--setenv", "TERM", term,
+		"--setenv", "HOME", tempDir,
+		"--setenv", "LC_ALL", lang,
 		"--bind", "/", "/",
 		"--bind", tempDir, "/tmp",
 		"--dev", "/dev",
 		"--proc", "/proc",
-		filepath.Join(prefix, "bin", "melange."+runtime.GOARCH),
+		"--",
+		"melange",
 		"build",
-		srcArg,
+		configPath,
+		"--rm",
+		"--create-build-log",
+		"--generate-index=0",
 		"--log-level", "info",
 		"--runner", "bubblewrap",
-		"--out-dir", filepath.Join(outDir, "apk"),
-		"--cache-dir", melangeCacheDir,
-		"--arch", runtime.GOARCH,
-		"--apk-cache-dir", apkoCacheDir,
-		"--workspace-dir", filepath.Join(tempDir, "workspace"),
-		"--guest-dir", filepath.Join(tempDir, "guest"),
-		config,
-	}, " "))
+		"--out-dir", filepath.Join(packageDir, "packages"),
+		"--signing-key", os.Getenv("key"),
+	)
+
+	arch := os.Getenv("arch")
+	if arch == "" {
+		arch = runtime.GOARCH
+	}
+	command.Args = append(command.Args, "--arch", arch)
+
+	srcDir := filepath.Join(packageDir, "src")
+	if _, err := os.Stat(srcDir); err == nil {
+		command.Args = append(command.Args, "--source-dir", srcDir)
+	} else {
+		command.Args = append(command.Args, "--empty-workspace")
+	}
+
+	command.Stdin = os.Stdin
+	command.Stdout = os.Stdout
+	command.Stderr = os.Stderr
+}
+
+func init() {
+	setupPackage()
+	setupTempDir()
+	setupCommand()
+}
+
+func clearTmp() {
+	if err := os.RemoveAll(tempDir); err != nil {
+		// printErr("temporary dir not removed:", err.Error(), "tempdir="+tempDir)
+
+		filepath.Walk(tempDir, func(path string, info fs.FileInfo, err error) error {
+			if err == nil {
+				os.Chmod(path, 0o777)
+			}
+			return err
+		})
+
+		if err := os.RemoveAll(tempDir); err != nil {
+			printErr("temporary dir not removed:", err.Error(), "tempdir="+tempDir)
+		}
+	}
+}
+
+func main() {
+	printErr(command.Args...)
+
+	err := command.Run()
+	if err != nil {
+		printErr("command failed:", err.Error())
+		clearTmp()
+		os.Exit(1)
+	}
+
+	clearTmp()
 }

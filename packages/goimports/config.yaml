@@ -1,0 +1,22 @@
+package:
+  name: goimports
+  version: latest
+  epoch: 0
+  description: "goimports"
+
+environment:
+  contents:
+    repositories:
+      - https://dl-cdn.alpinelinux.org/alpine/edge/main
+      - https://dl-cdn.alpinelinux.org/alpine/edge/community
+    packages:
+      - alpine-base
+      - go
+      - build-base
+
+pipeline:
+  - runs: |
+      export GOBIN=${{targets.destdir}}/usr/bin
+      mkdir -p $GOBIN
+
+      go install golang.org/x/tools/cmd/goimports@latest
