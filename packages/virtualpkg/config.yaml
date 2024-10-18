@@ -1,0 +1,20 @@
+package:
+  name: virtualpkg
+  version: v0.1
+  epoch: 0
+  description: "forces added packages to be virtual"
+
+
+environment:
+  contents:
+    repositories:
+      - https://dl-cdn.alpinelinux.org/alpine/edge/main
+      - https://dl-cdn.alpinelinux.org/alpine/edge/community
+    packages:
+      - busybox
+      - elfutils
+      - go
+
+pipeline:
+  - runs: |
+      DESTDIR=${{targets.destdir}} ./install.sh

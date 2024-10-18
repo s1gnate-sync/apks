@@ -76,9 +76,9 @@ func setupCommand() {
 		"--create-build-log",
 		"--generate-index=0",
 		"--log-level", "info",
-		"--runner", "bubblewrap",
+		// "--runner", "bubblewrap",
 		"--out-dir", filepath.Join(packageDir, "packages"),
-		"--signing-key", os.Getenv("key"),
+		"--signing-key", os.Getenv("signingkey"),
 	)
 
 	arch := os.Getenv("arch")

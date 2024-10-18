@@ -1,0 +1,21 @@
+package:
+  name: tengo
+  version: latest
+  epoch: 0
+  description: "tengo"
+
+environment:
+  contents:
+    repositories:
+      - https://dl-cdn.alpinelinux.org/alpine/edge/main
+      - https://dl-cdn.alpinelinux.org/alpine/edge/community
+    packages:
+      - alpine-base
+      - build-base
+      - go
+
+pipeline:
+  - runs: |
+      export GOBIN=${{targets.destdir}}/usr/bin CGO_ENABLED=0
+      mkdir -p $GOBIN
+      go install github.com/d5/tengo/v2/cmd/tengo@latest 
