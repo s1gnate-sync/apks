@@ -24,4 +24,24 @@ done
 
 for archdir in $(find $base/repository -maxdepth 1 -type d | tail -n+2); do
   melange index --output $archdir/APKINDEX.tar.gz --signing-key "$signingkey" $archdir/*.apk 
+
+  rm -f "$archdir/index.html"
 done
+
+rm -f "$base/repository/index.html"
+
+set +xeu
+
+python3 -m http.server -b 127.0.0.1 -d $base &
+pid="$$"
+
+sleep 1
+
+curl -L http://127.0.0.1:8000/repository/ -o $base/repository/index.html
+curl -L http://127.0.0.1:8000/repository/aarch64/ -o $base/repository/aarch64/index.html
+
+jobs -p | xargs -n 1 kill -9
+
+
+
+
